@@ -1,0 +1,11 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}{{ project.name }} : Edit Task - {{ task.name }}{% endblock %}
+
+{% block body %}
+    <div class="container">
+        <h1 class="my-3">Edit Task: "{{ task.name }}" for Project: "{{ project.name }}"</h1>
+        {{ include('generic_form/_form.html.twig') }}
+        <a class="btn btn-secondary mt-3" href="{{ path('list_task', {'projectId': project.id}) }}">back to list</a>
+    </div>
+{% endblock %}
