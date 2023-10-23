@@ -20,7 +20,14 @@ class Task
     private ?string $description = null;
 
     #[ORM\ManyToOne(inversedBy: 'tasks')]
-    private ?Project $projet = null;
+    private ?Project $project = null;
+
+    #[ORM\ManyToOne(targetEntity: Collaboration::class, inversedBy: 'tasks')]
+    #[ORM\JoinColumn(name: "collaboration_id", referencedColumnName: "id", onDelete: "SET NULL")]
+    private ?Collaboration $collaboration;
+
+    #[ORM\Column(length: 255)]
+    private ?string $state = null;
 
     public function getId(): ?int
     {
@@ -51,14 +58,46 @@ class Task
         return $this;
     }
 
-    public function getProjet(): ?Project
+    public function getproject(): ?Project
     {
-        return $this->projet;
+        return $this->project;
     }
 
-    public function setProjet(?Project $projet): static
+    public function setproject(?Project $project): static
     {
-        $this->projet = $projet;
+        $this->project = $project;
+
+        return $this;
+    }
+
+    public function getState(): ?string
+    {
+        return $this->state;
+    }
+
+    public function setState(string $state): static
+    {
+        $this->state = $state;
+
+        return $this;
+    }
+
+    /**
+     * Get the value of collaboration
+     */
+    public function getCollaboration()
+    {
+        return $this->collaboration;
+    }
+
+    /**
+     * Set the value of collaboration
+     *
+     * @return  self
+     */
+    public function setCollaboration($collaboration)
+    {
+        $this->collaboration = $collaboration;
 
         return $this;
     }

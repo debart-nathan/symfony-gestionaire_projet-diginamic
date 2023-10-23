@@ -40,12 +40,21 @@ class UserRepository extends ServiceEntityRepository implements PasswordUpgrader
         $this->getEntityManager()->flush();
     }
 
-    public function findByUser(User $user)
+
+    public function findUsersNotInProject($projectId)
     {
-        return $this->createQueryBuilder('p')
-            ->where('p.user = :user')
-            ->setParameter('user', $user)
-            ->getQuery()
-            ->getResult();
+        $entityManager = $this->getEntityManager();
+    
+        $query = $entityManager->createQuery(
+            'SELECT u
+            FROM App\Entity\User u
+            WHERE u.id NOT IN (
+                SELECT IDENTITY(c.user)
+                FROM App\Entity\Collaboration c
+                WHERE c.project = :projectId
+            )'
+        )->setParameter('projectId', $projectId);
+    
+        return $query->getResult();
     }
 }

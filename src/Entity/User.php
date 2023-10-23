@@ -31,12 +31,13 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\Column]
     private ?string $password = null;
 
-    #[ORM\OneToMany(mappedBy: 'user', targetEntity: Project::class, orphanRemoval: true)]
-    private Collection $projects;
+
+    #[ORM\OneToMany(mappedBy: 'user', targetEntity: Collaboration::class, orphanRemoval: true)]
+    private Collection $collaborations;
 
     public function __construct()
     {
-        $this->projects = new ArrayCollection();
+        $this->collaborations = new ArrayCollection();
     }
 
     public function getId(): ?int
@@ -109,30 +110,31 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         // $this->plainPassword = null;
     }
 
+
     /**
-     * @return Collection<int, Project>
+     * @return Collection<int, Collaboration>
      */
-    public function getProjects(): Collection
+    public function getCollaborations(): Collection
     {
-        return $this->projects;
+        return $this->collaborations;
     }
 
-    public function addProject(Project $project): static
+    public function addCollaboration(Collaboration $collaboration): static
     {
-        if (!$this->projects->contains($project)) {
-            $this->projects->add($project);
-            $project->setUser($this);
+        if (!$this->collaborations->contains($collaboration)) {
+            $this->collaborations->add($collaboration);
+            $collaboration->setUser($this);
         }
 
         return $this;
     }
 
-    public function removeProject(Project $project): static
+    public function removeCollaboration(Collaboration $collaboration): static
     {
-        if ($this->projects->removeElement($project)) {
+        if ($this->collaborations->removeElement($collaboration)) {
             // set the owning side to null (unless already changed)
-            if ($project->getUser() === $this) {
-                $project->setUser(null);
+            if ($collaboration->getUser() === $this) {
+                $collaboration->setUser(null);
             }
         }
 

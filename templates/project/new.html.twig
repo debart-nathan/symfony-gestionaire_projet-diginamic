@@ -1,15 +1,16 @@
 {% extends 'base.html.twig' %}
 
-{% block title %}New Project{% endblock %}
+{% block title %}New Project
+{% endblock %}
 
 {% block body %}
-    <div class="container">
-        <h1 class="my-3">Create new Project</h1>
+	<div class="container">
+		<h1 class="my-3">Create new Project</h1>
 
-        <div class="mb-3">
-            {{ include('generic_form/_form.html.twig') }}
-        </div>
+		<div class="mb-3">
+			{{ include('generic_form/_form.html.twig') }}
+		</div>
 
-        <a class="btn btn-secondary" href="{{ path('list_project') }}">Back to list</a>
-    </div>
+		<a class="btn btn-secondary" href="{{ path('list_project') }}">Back to list</a>
+	</div>
 {% endblock %}

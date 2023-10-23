@@ -21,16 +21,16 @@ class Project
     #[ORM\Column(length: 255)]
     private ?string $description = null;
 
-    #[ORM\OneToMany(mappedBy: 'projet', targetEntity: Task::class)]
+    #[ORM\OneToMany(mappedBy: 'project', targetEntity: Task::class)]
     private Collection $tasks;
 
-    #[ORM\ManyToOne(inversedBy: 'projects')]
-    #[ORM\JoinColumn(nullable: false)]
-    private ?User $user = null;
+    #[ORM\OneToMany(mappedBy: 'project', targetEntity: Collaboration::class)]
+    private Collection $collaborations;
 
     public function __construct()
     {
         $this->tasks = new ArrayCollection();
+        $this->collaborations = new ArrayCollection();
     }
 
     public function getId(): ?int
@@ -74,7 +74,7 @@ class Project
     {
         if (!$this->tasks->contains($task)) {
             $this->tasks->add($task);
-            $task->setProjet($this);
+            $task->setProject($this);
         }
 
         return $this;
@@ -84,22 +84,51 @@ class Project
     {
         if ($this->tasks->removeElement($task)) {
             // set the owning side to null (unless already changed)
-            if ($task->getProjet() === $this) {
-                $task->setProjet(null);
+            if ($task->getProject() === $this) {
+                $task->setProject(null);
             }
         }
 
         return $this;
     }
 
-    public function getUser(): ?User
+    /**
+     * @return Collection<int, Collaboration>
+     */
+    public function getCollaborations(): Collection
     {
-        return $this->user;
+        return $this->collaborations;
     }
 
-    public function setUser(?User $user): static
+    public function addCollaboration(Collaboration $collaboration): static
     {
-        $this->user = $user;
+        if (!$this->collaborations->contains($collaboration)) {
+            $this->collaborations->add($collaboration);
+            $collaboration->setProject($this);
+        }
+
+        return $this;
+    }
+
+    public function isCollaborator(User $user): bool
+    {
+        foreach ($this->collaborations as $collaboration) {
+            if ($collaboration->getUser() === $user) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    public function removeCollaboration(Collaboration $collaboration): static
+    {
+        if ($this->collaborations->removeElement($collaboration)) {
+            // set the owning side to null (unless already changed)
+            if ($collaboration->getProject() === $this) {
+                $collaboration->setProject(null);
+            }
+        }
 
         return $this;
     }

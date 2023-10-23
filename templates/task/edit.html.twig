@@ -9,3 +9,21 @@
         <a class="btn btn-secondary mt-3" href="{{ path('list_task', {'projectId': project.id}) }}">back to list</a>
     </div>
 {% endblock %}
+
+{% block stylesheets %}
+	{{ parent() }}
+	<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet"/>
+{% endblock %}
+
+{% block javascripts %}
+    {{ parent() }}
+	<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+	<script>
+        $(document).ready(function () {
+            $('.select2-enable').select2()
+                .on('select2:open', function() {
+                    console.log('Select2 initialized on', this);
+                });
+        });
+    </script>
+{% endblock %}

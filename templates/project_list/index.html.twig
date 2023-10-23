@@ -1,0 +1,34 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}
+	{{ title }}
+{% endblock %}
+
+{% block body %}
+	<div class="container">
+		<h1 class="my-3">{{ title }}</h1>
+		<ul class="list-group">
+			{% for project in projects %}
+				<li class="list-group-item">
+					<article class="my-3">
+						<div class="card-body">
+							<p>
+								NOM:
+								{{ project.name }}<br>
+								DESCRIPTION:
+								{{ project.description }}<br>
+								TASK:
+								<a class="btn btn-secondary" href="{{ path('list_task', {'projectId': project.id}) }}">View tasks</a>
+								<br/>
+							</p>
+							{% if(project.isAdmin) %}
+								<a class="btn btn-primary" href="{{ path('project_edit', {'id': project.id}) }}">Edit</a>
+							{% endif %}
+						</div>
+					</article>
+				</li>
+			{% endfor %}
+		</ul>
+		<a class="btn btn-primary mt-3" href="{{ path('project_new') }}">Create new project</a>
+	</div>
+{% endblock %}

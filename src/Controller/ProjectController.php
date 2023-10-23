@@ -2,9 +2,12 @@
 
 namespace App\Controller;
 
+use App\Entity\Collaboration;
 use App\Entity\Project;
 use App\Form\ProjectType;
+use App\Repository\CollaborationRepository;
 use App\Repository\ProjectRepository;
+use App\Repository\TaskRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
@@ -14,35 +17,27 @@ use Symfony\Component\Routing\Annotation\Route;
 #[Route('/project')]
 class ProjectController extends AbstractController
 {
-    #[Route('/', name: 'list_project')]
-    public function index(ProjectRepository $projectRepository): Response
-    {
 
-        $projects = $projectRepository->findByUser($this->getUser());
-
-        $projectsData = array_map(function ($project) {
-            return [
-                'id' => $project->getId(),
-                'name' => $project->getName(),
-                'description' => $project->getDescription()
-            ];
-        }, $projects);
-
-        return $this->render('project/index.html.twig', [
-            'title' => 'Liste des projets',
-            'projects' => $projectsData,
-        ]);
-    }
 
     #[Route('/new', name: 'project_new', methods: ['GET', 'POST'])]
-    public function new(Request $request, EntityManagerInterface $entityManager): Response
-    {
+    public function new(
+        Request $request,
+        EntityManagerInterface $entityManager,
+    ): Response {
         $project = new Project();
         $form = $this->createForm(ProjectType::class, $project);
         $form->handleRequest($request);
 
         if ($form->isSubmitted() && $form->isValid()) {
-            $project->setUser($this->getUser());
+            // Create a new Collaboration
+            $collaboration = new Collaboration();
+            $collaboration->setUser($this->getUser());
+            $collaboration->setProject($project);
+            $collaboration->setIsAdmin(true);
+
+            // Persist the new Collaboration
+            $entityManager->persist($collaboration);
+
             $entityManager->persist($project);
             $entityManager->flush();
 
@@ -56,9 +51,16 @@ class ProjectController extends AbstractController
     }
 
     #[Route('/{id}/edit', name: 'project_edit', methods: ['GET', 'POST'])]
-    public function edit(Request $request, Project $project, EntityManagerInterface $entityManager): Response
-    {
-        if ($project->getUser() !== $this->getUser()) {
+    public function edit(
+        Request $request,
+        Project $project,
+        EntityManagerInterface $entityManager,
+        CollaborationRepository $collaborationRepository
+    ): Response {
+
+        $adminUser = $collaborationRepository->findAdminUserByProject($project);
+
+        if ($adminUser !== $this->getUser()) {
             return $this->redirectToRoute('list_project');
         }
         $form = $this->createForm(ProjectType::class, $project);
@@ -90,9 +92,16 @@ class ProjectController extends AbstractController
     }
 
     #[Route('{id}/delete/', name: 'project_delete', methods: ['POST'])]
-    public function delete(Request $request, Project $project, EntityManagerInterface $entityManager): Response
-    {
-        if ($project->getUser() !== $this->getUser()) {
+    public function delete(
+        Request $request,
+        Project $project,
+        EntityManagerInterface $entityManager,
+        CollaborationRepository $collaborationRepository
+    ): Response {
+
+        $adminUser = $collaborationRepository->findAdminUserByProject($project);
+
+        if ($adminUser !== $this->getUser()) {
             // Redirect to project list
             return $this->redirectToRoute('list_project');
         }
@@ -113,5 +122,36 @@ class ProjectController extends AbstractController
 
 
         return $this->redirectToRoute('project_edit', ['id' => $project->getId()]);
+    }
+
+
+
+    #[Route('/{projectId}', name: 'list_task')]
+    public function index(
+        TaskRepository $taskRepository,
+        ProjectRepository $projectRepository,
+        CollaborationRepository $collaborationRepository,
+        $projectId
+    ): Response {
+
+        $project = $projectRepository->find($projectId);
+        if (!$project->isCollaborator($this->getUser())) {
+            // Redirect to project list or show an error message
+            return $this->redirectToRoute('list_project');
+        }
+
+        $tasks = $taskRepository->findBy(['project' => $projectId]);
+
+        $collaborations = $collaborationRepository->findBy(['project' => $projectId]);
+
+        $adminUser = $collaborationRepository->findAdminUserByProject($project);
+        $isUserAdmin = $adminUser === $this->getUser();
+
+        return $this->render('project/index.html.twig', [
+            'tasks' => $tasks,
+            'project' => $project,
+            'collaborations' => $collaborations,
+            'isUserAdmin' => $isUserAdmin,
+        ]);
     }
 }

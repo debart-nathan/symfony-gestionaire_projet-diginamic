@@ -12,14 +12,17 @@
 			<link href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" rel="stylesheet">
 		{% endblock %}
 
-		{% block javascripts %}
-			<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js"></script>
-		{% endblock %}
+		
 	</head>
 	<body class="bg-light">
 		{% include 'header.html.twig' %}
         <div class="container">
 		    {% block body %}{% endblock %}
         </div>
+
+		{% block javascripts %}
+			<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+			<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js"></script>
+		{% endblock %}
 	</body>
 </html>
