@@ -3,12 +3,9 @@
 namespace App\Controller;
 
 use App\Entity\Task;
-use App\Entity\Project;
 use App\Form\TaskType;
-use App\Repository\CollaborationRepository;
 use App\Repository\ProjectRepository;
-use App\Repository\TaskRepository;
-use Doctrine\ORM\EntityManagerInterface;
+use App\Service\TaskService;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -18,22 +15,22 @@ use Symfony\Component\Routing\Annotation\Route;
 class TaskController extends AbstractController
 {
 
+
+    public function __construct(private TaskService $taskService)
+    {
+    }
+
     #[Route('task/new', name: 'task_new', methods: ['GET', 'POST'])]
     public function new(
         Request $request,
-        EntityManagerInterface $entityManager,
-        CollaborationRepository $collaborationRepository,
         ProjectRepository $projectRepository,
         $projectId
     ): Response {
         $project = $projectRepository->find($projectId);
-        $adminUser = $collaborationRepository->findAdminUserByProject($project);
         $currentUser = $this->getUser();
 
-        dump($adminUser, $currentUser);
-        if ($collaborationRepository->findAdminUserByProject($project) != $this->getUser()) {
-
-            //return $this->redirectToRoute('list_project');
+        if (!$this->taskService->isAdmin($project, $currentUser)) {
+            return $this->redirectToRoute('list_project');
         }
 
         $task = new Task();
@@ -41,12 +38,9 @@ class TaskController extends AbstractController
         $form = $this->createForm(TaskType::class, $task, [
             'userIsAdmin' => true,
         ]);
+
         $form->handleRequest($request);
-
-        if ($form->isSubmitted() && $form->isValid()) {
-            $entityManager->persist($task);
-            $entityManager->flush();
-
+        if ($this->taskService->createTask($form, $task, $project)) {
             return $this->redirectToRoute('list_task', ['projectId' => $projectId]);
         }
 
@@ -61,41 +55,35 @@ class TaskController extends AbstractController
     public function edit(
         Request $request,
         Task $task,
-        EntityManagerInterface $entityManager,
-        CollaborationRepository $collaborationRepository,
         ProjectRepository $projectRepository,
         $projectId
     ): Response {
         $project = $projectRepository->find($projectId);
+        $currentUser = $this->getUser();
+
         if (
-            $collaborationRepository->findAdminUserByProject($project) != $this->getUser() &&
-            $task->getCollaboration()->getUser() != $this->getUser()
+            !$this->taskService->isAdmin($project, $currentUser) &&
+            $task->getCollaboration()->getUser() != $currentUser
         ) {
             // Redirect to project list or show an error message
             return $this->redirectToRoute('list_project');
         }
 
+         // Save old collaboration for check and update
+        $oldCollaboration = $task->getCollaboration();
+
         $form = $this->createForm(TaskType::class, $task, [
-            'userIsAdmin' => $collaborationRepository->findAdminUserByProject($project) == $this->getUser()
+            'userIsAdmin' => $this->taskService->isAdmin($project, $currentUser)
         ]);
+
         $form->handleRequest($request);
-
-        // Create delete form
-        $deleteForm = $this->createFormBuilder()
-            ->setAction($this->generateUrl('task_delete', ['id' => $task->getId(), 'projectId' => $projectId]))
-            ->setMethod('POST')
-            ->getForm();
-
-        if ($form->isSubmitted() && $form->isValid()) {
-            $entityManager->flush();
-
+        if ($this->taskService->updateTask($form, $task,$oldCollaboration)) {
             return $this->redirectToRoute('list_task', ['projectId' => $projectId]);
         }
 
         return $this->render('task/edit.html.twig', [
             'task' => $task,
             'form' => $form->createView(),
-            'delete_form' => $deleteForm->createView(), // Pass delete form to template
             'project' => $project
         ]);
     }
@@ -104,34 +92,19 @@ class TaskController extends AbstractController
     public function delete(
         Request $request,
         Task $task,
-        EntityManagerInterface $entityManager,
         ProjectRepository $projectRepository,
-        CollaborationRepository $collaborationRepository,
         $projectId
     ): Response {
         $project = $projectRepository->find($projectId);
-        if (!$collaborationRepository->findAdminUserByProject($project)) {
+        $currentUser = $this->getUser();
+
+        if (!$this->taskService->isAdmin($project, $currentUser)) {
             // Redirect to project list or show an error message
             return $this->redirectToRoute('list_project');
         }
 
-        $form = $this->createFormBuilder()
-            ->setAction($this->generateUrl('task_delete', ['id' => $task->getId(), 'projectId' => $projectId]))
-            ->setMethod('POST')
-            ->getForm();
+        $this->taskService->deleteTask($task, $project);
 
-        $form->handleRequest($request);
-
-        if ($form->isSubmitted() && $form->isValid()) {
-            $project = $entityManager->getRepository(Project::class)->find($projectId);
-            $project->removeTask($task); // Remove task from project
-            $entityManager->remove($task);
-            $entityManager->flush();
-
-            return $this->redirectToRoute('list_task', ['projectId' => $projectId]);
-        }
-
-
-        return $this->redirectToRoute('task_edit', ['id' => $task->getId(), 'projectId' => $projectId]);
+        return $this->redirectToRoute('list_task', ['projectId' => $projectId]);
     }
 }
