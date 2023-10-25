@@ -5,19 +5,27 @@ use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Component\Security\Http\Authentication\AuthenticationUtils;
+use App\Service\AuthService;
 
 class LoginController extends AbstractController
 {
+    private $authService;
+
+    public function __construct(AuthService $authService)
+    {
+        $this->authService = $authService;
+    }
+
     #[Route('/', name: 'app_login')]
     public function index(AuthenticationUtils $authenticationUtils): Response
     {
         if ($this->getUser()) {
-            // User is already logged in, redirect to list_project
+            $this->authService->loginUser($this->getUser());
+
             return $this->redirectToRoute('list_project');
         }
-        //Récupération des erreurs de connexion
+
         $error = $authenticationUtils->getLastAuthenticationError();
-        //Récupéartion du nom d'utilisateur soumis s'il existe
         $lastUsername = $authenticationUtils->getLastUsername();
 
         return $this->render('login/index.html.twig', [

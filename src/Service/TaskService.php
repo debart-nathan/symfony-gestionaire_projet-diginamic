@@ -11,15 +11,12 @@ use Symfony\Component\Form\FormInterface;
 
 class TaskService
 {
-    private $entityManager;
-    private $collaborationRepository;
 
     public function __construct(
-        EntityManagerInterface $entityManager,
-        CollaborationRepository $collaborationRepository
+        private EntityManagerInterface $entityManager,
+        private CollaborationRepository $collaborationRepository
     ) {
-        $this->entityManager = $entityManager;
-        $this->collaborationRepository = $collaborationRepository;
+
     }
 
     public function createTask(FormInterface $form, Task $task, Project $project)
@@ -45,7 +42,7 @@ class TaskService
         return false;
     }
 
-    public function updateTask(FormInterface $form, Task $task, Collaboration $odlCollaboration)
+    public function updateTask(FormInterface $form, Task $task, ?Collaboration $odlCollaboration)
     {
         if ($form->isSubmitted() && $form->isValid()) {
             // Get the Collaboration associated with the Task

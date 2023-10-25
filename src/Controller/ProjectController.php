@@ -2,7 +2,6 @@
 
 namespace App\Controller;
 
-use App\Entity\Collaboration;
 use App\Entity\Project;
 use App\Form\ProjectType;
 use App\Repository\CollaborationRepository;
@@ -13,33 +12,26 @@ use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Annotation\Route;
+use App\Service\ProjectService;
 
 #[Route('/project')]
 class ProjectController extends AbstractController
 {
+    public function __construct(private ProjectService $projectService)
+    {
+        
+    }
 
 
     #[Route('/new', name: 'project_new', methods: ['GET', 'POST'])]
-    public function new(
-        Request $request,
-        EntityManagerInterface $entityManager,
-    ): Response {
+    public function new(Request $request)
+    {
         $project = new Project();
         $form = $this->createForm(ProjectType::class, $project);
         $form->handleRequest($request);
 
         if ($form->isSubmitted() && $form->isValid()) {
-            // Create a new Collaboration
-            $collaboration = new Collaboration();
-            $collaboration->setUser($this->getUser());
-            $collaboration->setProject($project);
-            $collaboration->setIsAdmin(true);
-
-            // Persist the new Collaboration
-            $entityManager->persist($collaboration);
-
-            $entityManager->persist($project);
-            $entityManager->flush();
+            $this->projectService->createProject($project, $this->getUser());
 
             return $this->redirectToRoute('list_project');
         }
@@ -51,43 +43,20 @@ class ProjectController extends AbstractController
     }
 
     #[Route('/{id}/edit', name: 'project_edit', methods: ['GET', 'POST'])]
-    public function edit(
-        Request $request,
-        Project $project,
-        EntityManagerInterface $entityManager,
-        CollaborationRepository $collaborationRepository
-    ): Response {
-
-        $adminUser = $collaborationRepository->findAdminUserByProject($project);
-
-        if ($adminUser !== $this->getUser()) {
-            return $this->redirectToRoute('list_project');
-        }
+    public function edit(Request $request, Project $project)
+    {
         $form = $this->createForm(ProjectType::class, $project);
         $form->handleRequest($request);
 
-        // Create delete form
-        $deleteForm = $this->createFormBuilder()
-            ->setAction($this->generateUrl('project_delete', ['id' => $project->getId()]))
-            ->setMethod('POST')
-            ->getForm();
-
         if ($form->isSubmitted() && $form->isValid()) {
-            $entityManager->flush();
+            $this->projectService->updateProject($project);
 
             return $this->redirectToRoute('list_project');
         }
 
-        $projectData = [
-            'id' => $project->getId(),
-            'name' => $project->getName(),
-            'description' => $project->getDescription()
-        ];
-
         return $this->render('project/edit.html.twig', [
-            'project' => $projectData,
+            'project' => $project,
             'form' => $form->createView(),
-            'delete_form' => $deleteForm->createView(), // Pass delete form to template
         ]);
     }
 

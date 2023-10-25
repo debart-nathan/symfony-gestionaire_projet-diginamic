@@ -70,6 +70,8 @@ class Collaboration
         return $this;
     }
 
+    
+
     public function addTask(Task $task): static
     {
         if (!$this->tasks->contains($task)) {
@@ -112,4 +114,12 @@ class Collaboration
         return $this;
     }
 
+
+    /**
+     * Get the value of tasks
+     */ 
+    public function getTasks()
+    {
+        return $this->tasks;
+    }
 }
